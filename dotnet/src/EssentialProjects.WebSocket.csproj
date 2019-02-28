@@ -19,12 +19,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- <PackageReference Include="EssentialProjects.IAM.Contracts" Version="0.1.2" /> -->
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="EssentialProjects.WebSocket.Contracts" Version="0.1.0-feature-add-basic-implementation" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-    <ProjectReference Include="../../../websocket_contracts/dotnet/src/EssentialProjects.WebSocket.Contracts.csproj" />
   </ItemGroup>
 
 </Project>
