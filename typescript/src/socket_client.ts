@@ -53,6 +53,12 @@ export class SocketClient implements ISocketClient {
     this._socket.close();
   }
 
+  public onDisconnect(callback: Function): void {
+      this._socket.on('disconnect', () => {
+          callback();
+      });
+  }
+
   public on(eventType: string, callback: Function): void {
     let eventListeners: Array<Function> = this._eventListeners[eventType];
 
