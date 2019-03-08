@@ -1,6 +1,9 @@
-import { IEndpointSocketScope, MessageEnvelope, OnConnectCallback } from '@essential-projects/websocket_contracts';
+import {IEndpointSocketScope, MessageEnvelope, OnConnectCallback} from '@essential-projects/websocket_contracts';
+import {IIdentity} from '@essential-projects/iam_contracts';
+
 import * as WebSocket from 'ws';
-import { SocketClient } from './socket_client';
+
+import {SocketClient} from './socket_client';
 
 export class EndpointSocketScope implements IEndpointSocketScope {
 
@@ -22,8 +25,10 @@ export class EndpointSocketScope implements IEndpointSocketScope {
 
   public onConnect(callback: OnConnectCallback): void {
     this.socketServer.on('connection', (socket: WebSocket) => {
+      // property 'upgradeReq' is missing in typings
+      const identity: IIdentity = (socket as any).upgradeReq.identity;
       const socketClient: SocketClient = new SocketClient(socket, this.endpointName);
-      callback(socketClient);
+      callback(socketClient, identity);
     });
   }
 
