@@ -1,4 +1,5 @@
-import { ISocketClient, MessageEnvelope } from '@essential-projects/websocket_contracts';
+import {IIdentity} from '@essential-projects/iam_contracts';
+import {ISocketClient, MessageEnvelope, OnConnectCallback} from '@essential-projects/websocket_contracts';
 import * as WebSocket from 'ws';
 
 type EventListenersCollection = {
@@ -17,8 +18,16 @@ export class SocketClient implements ISocketClient {
     this._startListening();
   }
 
+  private get socket(): WebSocket {
+    return this._socket;
+  }
+
+  private get endpointName(): string {
+    return this._endpointName;
+  }
+
   private _startListening(): void {
-    this._socket.on('message', this._handleMessage.bind(this));
+    this.socket.on('message', this._handleMessage.bind(this));
   }
 
   private _handleMessage(data: WebSocket.Data): void {
@@ -31,7 +40,7 @@ export class SocketClient implements ISocketClient {
       return;
     }
 
-    const isNotMatchingEndpoint: boolean = !!this._endpointName && this._endpointName !== messageEnvelope.channelName;
+    const isNotMatchingEndpoint: boolean = !!this.endpointName && this.endpointName !== messageEnvelope.channelName;
 
     if (isNotMatchingEndpoint) {
       return;
@@ -49,12 +58,21 @@ export class SocketClient implements ISocketClient {
   }
 
   public dispose(): void {
-    this._socket.removeAllListeners();
-    this._socket.close();
+    this.socket.removeAllListeners();
+    this.socket.close();
+  }
+
+  public onConnect(callback: OnConnectCallback): void {
+    this.socket.on('connection', (socket: WebSocket) => {
+      // property 'upgradeReq' is missing in typings
+      const identity: IIdentity = (socket as any).upgradeReq.identity;
+      const socketClient: SocketClient = new SocketClient(socket, this.endpointName);
+      callback(socketClient, identity);
+    });
   }
 
   public onDisconnect(callback: Function): void {
-      this._socket.on('disconnect', () => {
+      this.socket.on('disconnect', () => {
           callback();
       });
   }
@@ -96,7 +114,7 @@ export class SocketClient implements ISocketClient {
   }
 
   public emit<TMessage>(eventType: string, message: TMessage): void {
-    const payload: MessageEnvelope<TMessage> = new MessageEnvelope(message, eventType, this._endpointName);
-    this._socket.send(JSON.stringify(payload));
+    const payload: MessageEnvelope<TMessage> = new MessageEnvelope(message, eventType, this.endpointName);
+    this.socket.send(JSON.stringify(payload));
   }
 }
