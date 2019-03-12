@@ -174,6 +174,13 @@ namespace EssentialProjects.WebSocket
                 return;
             }
 
+            var hasNoEventTypeDefinition = !this.EventListeners.ContainsKey(messageEnvelope.EventType);
+
+            if (hasNoEventTypeDefinition)
+            {
+                return;
+            }
+
             var eventTypeConfiguration = this.EventListeners[messageEnvelope.EventType];
 
             if (eventTypeConfiguration.HasNoEventListeners())
