@@ -98,17 +98,16 @@ namespace EssentialProjects.WebSocket
             var buffer = new byte[4096];
             do
             {
+                if (socket.State != WebSocketState.Open)
+                {
+                    return (null, null);
+                }
                 response = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
                 message.AddRange(new ArraySegment<byte>(buffer, 0, response.Count));
             } while (!response.EndOfMessage);
 
             return (response, message);
         }
-
-        // public void Emit<TMessage>(string eventType, TMessage message) where TMessage : class
-        // {
-        //     throw new NotImplementedException();
-        // }
 
         public Subscription On<TMessage>(string eventType, Action<TMessage> callback) where TMessage : class
         {
@@ -121,7 +120,7 @@ namespace EssentialProjects.WebSocket
             var eventTypeConfiguration = this.EventListeners[eventType];
 
             var listenerId = Guid.NewGuid();
-            var listener = new Listener<TMessage>(listenerId, typeof(TMessage), callback, this.DisposeListener);
+            var listener = new Listener<TMessage>(listenerId, eventType, typeof(TMessage), callback, this.DisposeListener);
 
             eventTypeConfiguration.EventListeners.Add(listener);
 
@@ -140,10 +139,10 @@ namespace EssentialProjects.WebSocket
             Subscription subscription = null;
 
             Action<TMessage> innerCallback = (message) => {
+                callback(message);
                 if (subscription != null) {
                     subscription.Dispose();
                 }
-                callback(message);
             };
 
             subscription = this.On(eventType, innerCallback);
@@ -162,9 +161,19 @@ namespace EssentialProjects.WebSocket
 
         private void HandleMessage(WebSocketReceiveResult response, IEnumerable<byte> rawMessage)
         {
+            if (rawMessage == null)
+            {
+                return;
+            }
+
             var jsonResponse = Encoding.UTF8.GetString(rawMessage.ToArray());
 
             MessageEnvelope<object> messageEnvelope = (MessageEnvelope<object>)JsonConvert.DeserializeObject(jsonResponse, typeof(MessageEnvelope<object>));
+
+            if (messageEnvelope == null)
+            {
+                return;
+            }
 
             var hasEndpointName = !String.IsNullOrEmpty(this.ChannelName);
             var isNotCorrectEndpoint = this.ChannelName != messageEnvelope.ChannelName;
@@ -193,7 +202,8 @@ namespace EssentialProjects.WebSocket
             var messageContent = messageEnvelope.Message.ToString();
             var deserializedMessage = JsonConvert.DeserializeObject(messageContent, eventTypeConfiguration.MessageType);
 
-            foreach (var eventListener in eventTypeConfiguration.EventListeners)
+            var eventListeners = eventTypeConfiguration.EventListeners.ToArray();
+            foreach (var eventListener in eventListeners)
             {
                 eventListener.ExecuteCallback(deserializedMessage);
             }
