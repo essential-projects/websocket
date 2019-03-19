@@ -21,9 +21,10 @@ namespace EssentialProjects.WebSocket
         public string EventType { get; private set; }
         public Type MessageType { get; private set; }
 
-        public Listener(Guid listenerId, Type messageType, Action<TMessage> callback, Action<IListener> disposeCallback)
+        public Listener(Guid listenerId, string eventType, Type messageType, Action<TMessage> callback, Action<IListener> disposeCallback)
         {
             this.Id = listenerId;
+            this.EventType = eventType;
             this.MessageType = messageType;
             this.Callback = callback;
             this.DisposeCallback = disposeCallback;
