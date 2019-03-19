@@ -114,7 +114,9 @@ export class SocketClient implements ISocketClient {
   }
 
   public emit<TMessage>(eventType: string, message: TMessage): void {
-    const payload: MessageEnvelope<TMessage> = new MessageEnvelope(message, eventType, this.endpointName);
-    this.socket.send(JSON.stringify(payload));
+    if (this.socket.readyState === WebSocket.OPEN) {
+      const payload: MessageEnvelope<TMessage> = new MessageEnvelope(message, eventType, this.endpointName);
+      this.socket.send(JSON.stringify(payload));
+    }
   }
 }
